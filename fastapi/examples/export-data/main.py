@@ -7,7 +7,9 @@ import csv
 import os
 import sqlite3
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas\nimport boto3\nfrom botocore.exceptions import BotoCoreError, NoCredentialsError
+from reportlab.pdfgen import canvas
+import boto3
+from botocore.exceptions import BotoCoreError, NoCredentialsError
 import mysql.connector
 
 app = FastAPI(title="Data Export Example")
