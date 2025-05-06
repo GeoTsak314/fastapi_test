@@ -1,26 +1,31 @@
-# Export Data Example with FastAPI
+# Export Data Example with FastAPI 
+# by Joanna Karytsioti & George Tsakalos
 
-This example demonstrates how to build a FastAPI application that exports structured data to various destinations, including:
+This FastAPI app demonstrates how to export structured data to a wide variety of formats and systems.
 
-## 📁 File Formats
-- JSON
-- CSV
-- Excel
-- PDF
-- Parquet
-- Avro
-- Feather
-- ORC
+---
 
-## 🗄 Databases & Storage
-- MySQL
-- SQLite
-- AWS S3
+## ✅ Supported Export Formats
 
-## 🔄 Streaming Systems
-- Kafka
-- RabbitMQ
-- Apache Pulsar
+### 📁 File Formats
+- JSON (`?format=json`)
+- CSV (`?format=csv`)
+- Excel (`?format=excel`)
+- PDF (`?format=pdf`)
+- Parquet (`?format=parquet`)
+- Avro (`?format=avro`)
+- Feather (`?format=feather`)
+- ORC (`?format=orc`)
+
+### 🗄 Databases & Storage
+- MySQL (`?format=mysql`)
+- SQLite (`?format=sqlite`)
+- AWS S3 (`?format=s3`)
+
+### 🔄 Streaming Systems
+- Kafka (`?format=kafka`)
+- RabbitMQ (`?format=rabbitmq`)
+- Apache Pulsar (`?format=pulsar`)
 
 ---
 
@@ -38,29 +43,8 @@ pip install -r requirements_all_exports.txt
 uvicorn main:app --reload
 ```
 
-3. **Open your browser** and navigate to:
-
-```
-http://127.0.0.1:8000/
-```
-
-You’ll be automatically redirected to the **interactive Swagger UI** at `/docs`.
-
----
-
-## 🛠 Export Endpoint
-
-**GET** `/export`
-
-### Query Parameter:
-| Name   | Type   | Description |
-|--------|--------|-------------|
-| format | string | One of the supported formats listed above |
-
-### Example:
-```http
-GET /export?format=excel
-```
+3. **Visit**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)  
+   This will redirect you to Swagger docs (`/docs`) where you can test the `/export` endpoint.
 
 ---
 
@@ -92,15 +76,14 @@ GET /export?format=excel
 
 ---
 
-## ✅ Features
+## 📦 Dependencies (see `requirements_all_exports.txt`)
 
-- Modular and extensible export logic
-- Cloud- and stream-ready integrations
-- Swagger UI for testing and documentation
-- Easy setup with standard Python tools
+- `fastapi`, `uvicorn`
+- `pandas`, `xlsxwriter`, `reportlab`, `pyarrow`, `fastavro`
+- `mysql-connector-python`, `boto3`, `kafka-python`, `pika`, `pulsar-client`
 
 ---
 
 ## 📄 License
 
-MIT - Provided as an open example for educational and development purposes.
+MIT – for educational, demonstration, and contribution purposes.
