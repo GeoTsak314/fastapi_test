@@ -4,6 +4,7 @@ import pandas as pd
 import io
 import csv
 import os
+import sqlite3
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import mysql.connector
@@ -14,12 +15,14 @@ app = FastAPI(title="Data Export Example")
 
 
 
-# Dummy data source
+# Dummy data source for testing purposes
 data = [
     {"id": 1, "name": "Sebastian", "age": 27},
     {"id": 2, "name": "Joanna", "age": 22},
     {"id": 3, "name": "George", "age": 37}
 ]
+
+
 
 
 
@@ -32,6 +35,7 @@ def export_to_csv(df: pd.DataFrame):
     return StreamingResponse(output, media_type="text/csv",
                              headers={"Content-Disposition": "attachment; filename=data.csv"})
 
+
 def export_to_excel(df: pd.DataFrame):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -39,6 +43,7 @@ def export_to_excel(df: pd.DataFrame):
     output.seek(0)
     return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                              headers={"Content-Disposition": "attachment; filename=data.xlsx"})
+
 
 def export_to_pdf(df: pd.DataFrame):
     output = io.BytesIO()
@@ -53,12 +58,52 @@ def export_to_pdf(df: pd.DataFrame):
     return StreamingResponse(output, media_type="application/pdf",
                              headers={"Content-Disposition": "attachment; filename=data.pdf"})
 
+
 def export_to_parquet(df: pd.DataFrame):
     output = io.BytesIO()
     df.to_parquet(output, engine="pyarrow", index=False)
     output.seek(0)
     return StreamingResponse(output, media_type="application/octet-stream",
                              headers={"Content-Disposition": "attachment; filename=data.parquet"})
+
+
+def export_to_avro(df: pd.DataFrame):
+    output = io.BytesIO()
+    df.to_avro(output, engine="fastavro", index=False)
+    output.seek(0)
+    return StreamingResponse(output, media_type="application/octet-stream",
+                             headers={"Content-Disposition": "attachment; filename=data.avro"})
+
+
+def export_to_feather(df: pd.DataFrame):
+    output = io.BytesIO()
+    df.to_feather(output)
+    output.seek(0)
+    return StreamingResponse(output, media_type="application/octet-stream",
+                             headers={"Content-Disposition": "attachment; filename=data.feather"})
+
+
+def export_to_orc(df: pd.DataFrame):
+    output = io.BytesIO()
+    df.to_orc(output)
+    output.seek(0)
+    return StreamingResponse(output, media_type="application/octet-stream",
+                             headers={"Content-Disposition": "attachment; filename=data.orc"})
+
+
+def export_to_sqlite(df: pd.DataFrame):
+    conn = sqlite3.connect("data_export.db")
+    df.to_sql("exported_data", conn, if_exists="replace", index=False)
+    conn.commit()
+    conn.close()
+
+    with open("data_export.db", "rb") as f:
+        file_data = f.read()
+
+    output = io.BytesIO(file_data)
+    return StreamingResponse(output, media_type="application/x-sqlite3",
+                             headers={"Content-Disposition": "attachment; filename=data_export.db"})
+
 
 def export_to_mysql(df: pd.DataFrame):
     conn = mysql.connector.connect(
@@ -79,8 +124,12 @@ def export_to_mysql(df: pd.DataFrame):
 
 
 
+
 @app.get("/export")
-async def export_data(format: str = Query("json", enum=["json", "csv", "excel", "pdf", "parquet", "mysql"])):
+async def export_data(format: str = Query("json", enum=[
+    "json", "csv", "excel", "pdf", "parquet",
+    "mysql", "avro", "feather", "orc", "sqlite"
+])):
     df = pd.DataFrame(data)
 
     if format == "json":
@@ -95,6 +144,14 @@ async def export_data(format: str = Query("json", enum=["json", "csv", "excel", 
         return export_to_parquet(df)
     elif format == "mysql":
         return export_to_mysql(df)
+    elif format == "avro":
+        return export_to_avro(df)
+    elif format == "feather":
+        return export_to_feather(df)
+    elif format == "orc":
+        return export_to_orc(df)
+    elif format == "sqlite":
+        return export_to_sqlite(df)
 
     return JSONResponse(content={"error": "Invalid format"}, status_code=400)
 
