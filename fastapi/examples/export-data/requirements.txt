@@ -6,3 +6,4 @@ reportlab
 pyarrow
 mysql-connector-python
 fastavro
+boto3

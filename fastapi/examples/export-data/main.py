@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse, StreamingResponse, RedirectResponse
 import pandas as pd
@@ -6,25 +7,17 @@ import csv
 import os
 import sqlite3
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from reportlab.pdfgen import canvas\nimport boto3\nfrom botocore.exceptions import BotoCoreError, NoCredentialsError
 import mysql.connector
-
-
 
 app = FastAPI(title="Data Export Example")
 
-
-
-# Dummy data source for testing purposes
+# Dummy data source
 data = [
     {"id": 1, "name": "Sebastian", "age": 27},
     {"id": 2, "name": "Joanna", "age": 22},
     {"id": 3, "name": "George", "age": 37}
 ]
-
-
-
-
 
 def export_to_csv(df: pd.DataFrame):
     output = io.StringIO()
@@ -35,7 +28,6 @@ def export_to_csv(df: pd.DataFrame):
     return StreamingResponse(output, media_type="text/csv",
                              headers={"Content-Disposition": "attachment; filename=data.csv"})
 
-
 def export_to_excel(df: pd.DataFrame):
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
@@ -43,7 +35,6 @@ def export_to_excel(df: pd.DataFrame):
     output.seek(0)
     return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                              headers={"Content-Disposition": "attachment; filename=data.xlsx"})
-
 
 def export_to_pdf(df: pd.DataFrame):
     output = io.BytesIO()
@@ -58,14 +49,12 @@ def export_to_pdf(df: pd.DataFrame):
     return StreamingResponse(output, media_type="application/pdf",
                              headers={"Content-Disposition": "attachment; filename=data.pdf"})
 
-
 def export_to_parquet(df: pd.DataFrame):
     output = io.BytesIO()
     df.to_parquet(output, engine="pyarrow", index=False)
     output.seek(0)
     return StreamingResponse(output, media_type="application/octet-stream",
                              headers={"Content-Disposition": "attachment; filename=data.parquet"})
-
 
 def export_to_avro(df: pd.DataFrame):
     output = io.BytesIO()
@@ -74,7 +63,6 @@ def export_to_avro(df: pd.DataFrame):
     return StreamingResponse(output, media_type="application/octet-stream",
                              headers={"Content-Disposition": "attachment; filename=data.avro"})
 
-
 def export_to_feather(df: pd.DataFrame):
     output = io.BytesIO()
     df.to_feather(output)
@@ -82,14 +70,12 @@ def export_to_feather(df: pd.DataFrame):
     return StreamingResponse(output, media_type="application/octet-stream",
                              headers={"Content-Disposition": "attachment; filename=data.feather"})
 
-
 def export_to_orc(df: pd.DataFrame):
     output = io.BytesIO()
     df.to_orc(output)
     output.seek(0)
     return StreamingResponse(output, media_type="application/octet-stream",
                              headers={"Content-Disposition": "attachment; filename=data.orc"})
-
 
 def export_to_sqlite(df: pd.DataFrame):
     conn = sqlite3.connect("data_export.db")
@@ -103,7 +89,6 @@ def export_to_sqlite(df: pd.DataFrame):
     output = io.BytesIO(file_data)
     return StreamingResponse(output, media_type="application/x-sqlite3",
                              headers={"Content-Disposition": "attachment; filename=data_export.db"})
-
 
 def export_to_mysql(df: pd.DataFrame):
     conn = mysql.connector.connect(
@@ -121,14 +106,10 @@ def export_to_mysql(df: pd.DataFrame):
     conn.close()
     return JSONResponse(content={"message": "Data successfully exported to MySQL."})
 
-
-
-
-
 @app.get("/export")
 async def export_data(format: str = Query("json", enum=[
     "json", "csv", "excel", "pdf", "parquet",
-    "mysql", "avro", "feather", "orc", "sqlite"
+    "mysql", "avro", "feather", "orc", "sqlite", "s3"
 ])):
     df = pd.DataFrame(data)
 
@@ -150,13 +131,30 @@ async def export_data(format: str = Query("json", enum=[
         return export_to_feather(df)
     elif format == "orc":
         return export_to_orc(df)
-    elif format == "sqlite":
+
+elif format == "s3":
+    return export_to_s3(df)
+elif format == "sqlite":
+
         return export_to_sqlite(df)
 
     return JSONResponse(content={"error": "Invalid format"}, status_code=400)
 
-
-
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
+
+
+def export_to_s3(df: pd.DataFrame):
+    bucket_name = os.getenv("AWS_S3_BUCKET", "your-bucket-name")
+    object_key = os.getenv("AWS_S3_OBJECT_KEY", "exported_data.json")
+
+    # Convert DataFrame to JSON bytes
+    json_data = df.to_json(orient="records").encode("utf-8")
+
+    try:
+        s3 = boto3.client("s3")
+        s3.put_object(Bucket=bucket_name, Key=object_key, Body=json_data)
+        return JSONResponse(content={"message": f"Data exported to S3: s3://{bucket_name}/{object_key}"})
+    except (BotoCoreError, NoCredentialsError) as e:
+        return JSONResponse(content={"error": f"S3 upload failed: {str(e)}"}, status_code=500)
