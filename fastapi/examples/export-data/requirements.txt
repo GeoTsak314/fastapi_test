@@ -5,3 +5,4 @@ xlsxwriter
 reportlab
 pyarrow
 mysql-connector-python
+fastavro
