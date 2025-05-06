@@ -35,7 +35,7 @@ pip install -r requirements_all_exports.txt
 2. **Start the FastAPI server**:
 
 ```bash
-uvicorn main_all_exports:app --reload
+uvicorn main:app --reload
 ```
 
 3. **Open your browser** and navigate to:
