@@ -109,7 +109,7 @@ def export_to_mysql(df: pd.DataFrame):
 @app.get("/export")
 async def export_data(format: str = Query("json", enum=[
     "json", "csv", "excel", "pdf", "parquet",
-    "mysql", "avro", "feather", "orc", "sqlite", "s3"
+    "mysql", "avro", "feather", "orc", "sqlite", "s3", "kafka", "rabbitmq", "pulsar"
 ])):
     df = pd.DataFrame(data)
 
@@ -134,7 +134,15 @@ async def export_data(format: str = Query("json", enum=[
 
 elif format == "s3":
     return export_to_s3(df)
+
+elif format == "kafka":
+    return export_to_kafka(df)
+elif format == "rabbitmq":
+    return export_to_rabbitmq(df)
+elif format == "pulsar":
+    return export_to_pulsar(df)
 elif format == "sqlite":
+
 
         return export_to_sqlite(df)
 
@@ -158,3 +166,49 @@ def export_to_s3(df: pd.DataFrame):
         return JSONResponse(content={"message": f"Data exported to S3: s3://{bucket_name}/{object_key}"})
     except (BotoCoreError, NoCredentialsError) as e:
         return JSONResponse(content={"error": f"S3 upload failed: {str(e)}"}, status_code=500)
+
+
+# Kafka export
+from kafka import KafkaProducer
+def export_to_kafka(df: pd.DataFrame):
+    try:
+        producer = KafkaProducer(bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))
+        topic = os.getenv("KAFKA_TOPIC", "exported_data")
+        for record in df.to_dict(orient="records"):
+            producer.send(topic, pd.io.json.dumps(record).encode('utf-8'))
+        producer.flush()
+        return JSONResponse(content={"message": f"Data sent to Kafka topic '{topic}'"})
+    except Exception as e:
+        return JSONResponse(content={"error": f"Kafka export failed: {str(e)}"}, status_code=500)
+
+# RabbitMQ export
+import pika
+def export_to_rabbitmq(df: pd.DataFrame):
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host=os.getenv("RABBITMQ_HOST", "localhost")))
+        channel = connection.channel()
+        queue = os.getenv("RABBITMQ_QUEUE", "export_queue")
+        channel.queue_declare(queue=queue)
+
+        for record in df.to_dict(orient="records"):
+            channel.basic_publish(exchange='', routing_key=queue, body=pd.io.json.dumps(record))
+        connection.close()
+        return JSONResponse(content={"message": f"Data sent to RabbitMQ queue '{queue}'"})
+    except Exception as e:
+        return JSONResponse(content={"error": f"RabbitMQ export failed: {str(e)}"}, status_code=500)
+
+# Apache Pulsar export
+import pulsar
+def export_to_pulsar(df: pd.DataFrame):
+    try:
+        service_url = os.getenv("PULSAR_SERVICE_URL", "pulsar://localhost:6650")
+        topic = os.getenv("PULSAR_TOPIC", "exported_data")
+        client = pulsar.Client(service_url)
+        producer = client.create_producer(topic)
+
+        for record in df.to_dict(orient="records"):
+            producer.send(pd.io.json.dumps(record).encode('utf-8'))
+        client.close()
+        return JSONResponse(content={"message": f"Data sent to Pulsar topic '{topic}'"})
+    except Exception as e:
+        return JSONResponse(content={"error": f"Pulsar export failed: {str(e)}"}, status_code=500)

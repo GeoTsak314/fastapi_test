@@ -7,3 +7,6 @@ pyarrow
 mysql-connector-python
 fastavro
 boto3
+kafka-python
+pika
+pulsar-client
