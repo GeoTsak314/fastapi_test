@@ -108,6 +108,7 @@ def export_to_mysql(df: pd.DataFrame):
     conn.close()
     return JSONResponse(content={"message": "Data successfully exported to MySQL."})
 
+
 @app.get("/export")
 async def export_data(format: str = Query("json", enum=[
     "json", "csv", "excel", "pdf", "parquet",
@@ -133,24 +134,18 @@ async def export_data(format: str = Query("json", enum=[
         return export_to_feather(df)
     elif format == "orc":
         return export_to_orc(df)
-return export_to_orc(df)
-
-elif format == "s3":
-    return export_to_s3(df)
-
-elif format == "kafka":
-    return export_to_kafka(df)
-elif format == "rabbitmq":
-    return export_to_rabbitmq(df)
-elif format == "pulsar":
-    return export_to_pulsar(df)
-elif format == "sqlite":
-
-
+    elif format == "sqlite":
         return export_to_sqlite(df)
+    elif format == "s3":
+        return export_to_s3(df)
+    elif format == "kafka":
+        return export_to_kafka(df)
+    elif format == "rabbitmq":
+        return export_to_rabbitmq(df)
+    elif format == "pulsar":
+        return export_to_pulsar(df)
 
     return JSONResponse(content={"error": "Invalid format"}, status_code=400)
-
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
