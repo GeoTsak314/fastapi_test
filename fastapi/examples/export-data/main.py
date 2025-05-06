@@ -7,9 +7,7 @@ import csv
 import os
 import sqlite3
 from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-import boto3
-from botocore.exceptions import BotoCoreError, NoCredentialsError
+from reportlab.pdfgen import canvas\nimport boto3\nfrom botocore.exceptions import BotoCoreError, NoCredentialsError
 import mysql.connector
 
 app = FastAPI(title="Data Export Example")
@@ -133,19 +131,21 @@ async def export_data(format: str = Query("json", enum=[
         return export_to_feather(df)
     elif format == "orc":
         return export_to_orc(df)
+return export_to_orc(df)
 
 elif format == "s3":
-        return export_to_s3(df)
-    elif format == "kafka":
-        return export_to_kafka(df)
-    elif format == "rabbitmq":
-        return export_to_rabbitmq(df)
-    elif format == "pulsar":
-        return export_to_pulsar(df)
-    elif format == "sqlite":
-        return export_to_sqlite(df)
+    return export_to_s3(df)
 
-    return JSONResponse(content={"error": "Invalid format"}, status_code=400)
+elif format == "kafka":
+    return export_to_kafka(df)
+elif format == "rabbitmq":
+    return export_to_rabbitmq(df)
+elif format == "pulsar":
+    return export_to_pulsar(df)
+elif format == "sqlite":
+
+
+        return export_to_sqlite(df)
 
     return JSONResponse(content={"error": "Invalid format"}, status_code=400)
 
