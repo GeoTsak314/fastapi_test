@@ -19,7 +19,7 @@ app = FastAPI(title="Data Export Example")
 
 
 
-# Dummy data source for testing purposes
+# Dummy data source (for initial testing purposes only)
 data = [
     {"id": 1, "name": "Sebastian", "age": 27},
     {"id": 2, "name": "Joanna", "age": 22},
@@ -167,6 +167,7 @@ async def export_data(format: str = Query("json", enum=[
     return JSONResponse(content={"error": "Invalid format"}, status_code=400)
 
 
+
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
@@ -174,13 +175,12 @@ async def root():
 
 
 
-
-# S3 export
+# Special formats export
+# AWS S3 export
 def export_to_s3(df: pd.DataFrame):
     bucket_name = os.getenv("AWS_S3_BUCKET", "your-bucket-name")
     object_key = os.getenv("AWS_S3_OBJECT_KEY", "exported_data.json")
 
-    # Convert DataFrame to JSON bytes
     json_data = df.to_json(orient="records").encode("utf-8")
 
     try:
